@@ -50,8 +50,15 @@ git -c http.proxy= -c https.proxy= clone --depth 1 https://github.com/xiaoli8571
 ```
 （用户全局 git 代理未开时直连绕过；若仍不通试 ghproxy 镜像）
 
-### 2. 改 bundleName
+### 2. 改 bundleName（含源码内硬编码，关键）
 `AppScope/app.json5` 的 `bundleName` → 步骤 4 提取的调试 bundleName。
+
+**必须同步改源码内 3 处硬编码的 `com.nekobox.app.jynxen`**（否则 VPN 状态回调不到 UI → 120s 超时；通知 wantAgent 失败 → 扩展被杀断开）：
+- `entry/src/main/ets/core/VpnIpc.ets:23` `const APP_BUNDLE` — commonEvent 发布的 bundleName，必须与实际 bundle 一致，否则主应用收不到 VPN 状态/流量事件
+- `entry/src/main/ets/vpnext/VpnExtAbility.ets:1100` wantAgent 的 `wants[0].bundleName` — 通知"断开"按钮拉起 EntryAbility 的 bundleName，不匹配 → `Invalid wantAgent object` → 通知发不出 → 无前台通知 → 系统回收扩展进程 → VPN 断开
+- `entry/src/main/ets/core/ConfigBuilder.ets:725` `REAL_APP_PREFIX` — per-app 代理的沙箱路径前缀
+
+用 `grep -rn "com.nekobox.app.jynxen" entry/src/main/ets/` 确认无遗漏（VpnIpc.ets 的事件名常量如 `VPN_EVENT_STATUS` 不用改——发布订阅两端共用同一常量，事件名匹配不受 bundleName 影响）。
 
 ### 3. 改 build-profile.json5
 - `signingConfigs[0].material`：`certpath`/`profile`/`storeFile` 改成本机 `~/.ohos/config` 下对应材料的绝对路径；`keyPassword`/`storePassword` 用**加密格式**（build-profile.json5 原样从用户既有项目拷贝，hvigorw 能解）。`keyAlias`/`signAlg` 保持。
@@ -113,6 +120,9 @@ export PATH="<jdk17>/bin:$PATH"
 | 安装 9568289 | 受限权限无 ACL | 步骤 6 |
 | 测速「绑定物理网卡失败」 | testBypassTunnel 默认开 | 步骤 7 |
 | 订阅获取超时 | 订阅域名被墙 | 步骤 11 本机中转 |
+| 连接 120s 超时「扩展始终无状态回调」 | VpnIpc.ets APP_BUNDLE 硬编码原 bundleName | 步骤 2 改 APP_BUNDLE |
+| 连上后几分钟断开「扩展无响应」 | VpnExtAbility.ets wantAgent bundleName 硬编码 → 通知发不出 → 扩展被杀 | 步骤 2 改 wantAgent bundleName |
+| 状态栏无 VPN 图标 | 通知权限 allowEnableNotification=false | 设置→通知→NekoBox→允许通知；或卸载重装触发授权弹窗 |
 
 ## 限制（须如实告知用户）
 
