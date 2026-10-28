@@ -14,8 +14,21 @@
 3. **调试签名材料**：`~/.ohos/config/default_<bundleName>_<...>.{cer,p7b,p12}` + build-profile.json5 里的**加密格式**密码（`0000001B...`）。本流程走 hvigorw 构建，hvigor 能解加密密码，**无需明文**。
    - **无签名材料**：需要调试证书 + profile（绑定 bundleName + 设备 UDID）。获取途径任选其一：
      - (推荐) 装 DevEco Studio，新建任意空项目 → File→Project Structure→Signing Configs→Automatically generate signature，登录华为账号自动生成；
-     - 或手动在 [AGC](https://developer.huawei.com/consumer/cn/agconnect/) 申请调试证书 + Profile，用 hap-sign-tool 自签；
+     - 或手动在 [AGC](https://developer.huawei.com/consumer/cn/agconnect/) 申请（步骤见下「手动 AGC 申请调试签名」）；
      - 或从已有鸿蒙项目复用其 `~/.ohos/config` 材料（本 skill 即复用既有材料，无需 DevEco）。
+
+#### 手动 AGC 申请调试签名（无 DevEco 时）
+
+1. **生成本地密钥对 + CSR**：
+   ```
+   java -jar <hap-sign-tool.jar> generate-keypair -keyAlias debugKey -keyPwd <明文> -keyAlg ECC -keySize NIST-P-256 -keystoreFile ~/.ohos/config/debug.p12 -keystorePwd <明文>
+   java -jar <hap-sign-tool.jar> generate-csr -keyAlias debugKey -keyPwd <明文> -subject "C=CN,O=Personal,CN=Debug" -signAlg SHA256withECDSA -keystoreFile ~/.ohos/config/debug.p12 -keystorePwd <明文> -outFile ~/.ohos/config/debug.csr
+   ```
+   牢记明文密码（hvigorw 后续用加密格式，但此处生成需明文）。
+2. **AGC 创建项目+应用**：登录 AGC → 我的项目→新建项目→常规→应用→添加应用（平台选 HarmonyOS NEXT），记下 bundleName（三段式，如 com.you.name）。
+3. **上传 CSR 申请调试证书**：AGC → 用户与访问 → 凭证 → 数字证书 → 新建调试证书 → 上传 debug.csr → 下载 .cer。
+4. **创建调试 Profile**：AGC → 凭证 → Profile → 新建调试 Profile → 选应用 + 选刚建的证书 + 填设备 UDID（`hdc shell bm get --udid`）→ 下载 .p7b。
+5. **加密密码写入 build-profile.json5**：用 DevEco 的加密工具或 hvigor 内置转换把明文 storePassword/keyPassword 转成 `0000001B...` 格式填入 signingConfigs（hvigorw 构建只认加密格式）。若无加密工具，可直接在 build-profile.json5 里填明文让 hvigorw 首次构建时自动加密回写（部分版本支持）。
    - **忘 keystore 密码**：密码不可逆，打不开旧 .p12。须重新生成一套（同上任意途径），旧的应用需卸载重装。
 4. **调试 profile 绑定的 bundleName**：从 `.p7b` 二进制里正则提取三段式 bundleName（如 `com.xxx.yyy`）。构建时把 NekoBox 的 `AppScope/app.json5` bundleName 改成它。
 5. **真机已连接**：`<hdc> list targets` 非空；手机已开开发者模式 + USB 调试。
