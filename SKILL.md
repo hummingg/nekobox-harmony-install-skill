@@ -11,7 +11,9 @@
 
 1. **HarmonyOS command-line-tools**：含 `hvigor`、`ohpm`、`tool/node`、`sdk/default/openharmony`（含 ets/native/toolchains/hdc）。常见路径 `~/Downloads/command-line-tools`。用 `mdfind -name hvigorw.js` 定位。
 2. **JDK 17+**：系统 java 1.8 会让 hap-sign-tool 报 `parseAlgParameters failed`。检测 `java -version`，<17 则 `brew install openjdk@17` 并用其绝对路径。
-3. **调试签名材料**：`~/.ohos/config/default_<bundleName>_<...>.{cer,p7b,p12}`。需用户提供**明文** storePassword 与 keyPassword（hvigor 加密格式 hap-sign-tool 不认，但 hvigorw 构建可吃加密格式——优先走 hvigorw 构建路线，无需明文）。
+3. **调试签名材料**：`~/.ohos/config/default_<bundleName>_<...>.{cer,p7b,p12}` + build-profile.json5 里的**加密格式**密码（`0000001B...`）。本流程走 hvigorw 构建，hvigor 能解加密密码，**无需明文**。
+   - **无 DevEco Studio / 无签名材料**：纯 command-line-tools 无 GUI 引导生成调试 profile，须先装 DevEco Studio 任建一个空项目触发自动签名（File→Project Structure→Signing Configs→Automatically generate signature），或手动在 [AGC](https://developer.huawei.com/consumer/cn/agconnect/) 申请调试证书 + Profile。
+   - **忘 keystore 密码**：密码不可逆，打不开旧 .p12。须重新生成一套：DevEco 里 Project Structure→Signing Configs 删旧配置→重新 Automatically generate（会生成新 .p12 + 新 profile，旧的应用需卸载重装）。
 4. **调试 profile 绑定的 bundleName**：从 `.p7b` 二进制里正则提取三段式 bundleName（如 `com.xxx.yyy`）。构建时把 NekoBox 的 `AppScope/app.json5` bundleName 改成它。
 5. **真机已连接**：`<hdc> list targets` 非空；手机已开开发者模式 + USB 调试。
 6. **手机/SDK API 版本**：`<hdc> shell "param get const.ohos.apiversion"` 得手机 API；`sdk/default/sdk-pkg.json` 得 SDK API。两者须一致；项目 `build-profile.json5` 的 `compatibleSdkVersion`/`targetSdkVersion` 改成 SDK 支持的格式（API≥26 用 `"26.0.0"`，API 10–25 用 `"5.0.0(12)"` 样式）。
