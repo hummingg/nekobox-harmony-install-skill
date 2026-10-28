@@ -9,6 +9,8 @@
 
 ## 前置环境（必须，缺一不可，逐项检测并报告缺失项）
 
+0. **华为开发者账号**：访问 https://developer.huawei.com 注册个人开发者账号 → 完成实名认证（身份证）。后续 AGC 申请证书/Profile 都依赖此账号。
+
 1. **HarmonyOS command-line-tools**：含 `hvigor`、`ohpm`、`tool/node`、`sdk/default/openharmony`（含 ets/native/toolchains/hdc）。常见路径 `~/Downloads/command-line-tools`。用 `mdfind -name hvigorw.js` 定位。
 2. **JDK 17+**：系统 java 1.8 会让 hap-sign-tool 报 `parseAlgParameters failed`。检测 `java -version`，<17 则 `brew install openjdk@17` 并用其绝对路径。
 3. **调试签名材料**：`~/.ohos/config/default_<bundleName>_<...>.{cer,p7b,p12}` + build-profile.json5 里的**加密格式**密码（`0000001B...`）。本流程走 hvigorw 构建，hvigor 能解加密密码，**无需明文**。
