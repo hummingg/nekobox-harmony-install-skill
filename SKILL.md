@@ -7,12 +7,18 @@
 
 用户请求包含：安装/装 NekoBox、NekoBox4Harmony、nekobox 鸿蒙、sing-box 鸿蒙客户端等到手机/真机/纯血鸿蒙。
 
+## 使用方式（小白必读）
+
+1. 把本 `SKILL.md` 放进你的 code agent skills 目录（CodeArts: `~/.codeartsdoer/skills/` 或按你的 agent 约定），或在会话里直接 `@SKILL.md` 引用。
+2. 对 agent 说：「安装 NekoBox4Harmony 到我的鸿蒙手机」。
+3. agent 会逐项检测前置环境，缺什么报什么，你按提示补齐即可。无需手动跑下面的命令——它们是给 agent 看的执行规范。
+
 ## 前置环境（必须，缺一不可，逐项检测并报告缺失项）
 
 0. **华为开发者账号**：访问 https://developer.huawei.com 注册个人开发者账号 → 完成实名认证（身份证）。后续 AGC 申请证书/Profile 都依赖此账号。
 
-1. **HarmonyOS command-line-tools**：含 `hvigor`、`ohpm`、`tool/node`、`sdk/default/openharmony`（含 ets/native/toolchains/hdc）。常见路径 `~/Downloads/command-line-tools`。用 `mdfind -name hvigorw.js` 定位。
-2. **JDK 17+**：系统 java 1.8 会让 hap-sign-tool 报 `parseAlgParameters failed`。检测 `java -version`，<17 则 `brew install openjdk@17` 并用其绝对路径。
+1. **HarmonyOS command-line-tools**：含 `hvigor`、`ohpm`、`tool/node`、`sdk/default/openharmony`（含 ets/native/toolchains/hdc）。下载：![](https://developer.huawei.com/consumer/cn/download/) 搜「Command Line Tools for HarmonyOS」（macOS 选 arm64 版），解压到 `~/Downloads/command-line-tools`。用 `mdfind -name hvigorw.js` 定位已有安装。
+2. **JDK 17+**：系统 java 1.8 会让 hap-sign-tool 报 `parseAlgParameters failed`。检测 `java -version`，<17 则装：先装 Homebrew（`/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`）再 `brew install openjdk@17`，用其绝对路径 `/opt/homebrew/opt/openjdk@17/bin/java`。
 3. **调试签名材料**：`~/.ohos/config/default_<bundleName>_<...>.{cer,p7b,p12}` + build-profile.json5 里的**加密格式**密码（`0000001B...`）。本流程走 hvigorw 构建，hvigor 能解加密密码，**无需明文**。
    - **无签名材料**：需要调试证书 + profile（绑定 bundleName + 设备 UDID）。获取途径任选其一：
      - (推荐) 装 DevEco Studio，新建任意空项目 → File→Project Structure→Signing Configs→Automatically generate signature，登录华为账号自动生成；
@@ -33,7 +39,7 @@
 5. **加密密码写入 build-profile.json5**：用 DevEco 的加密工具或 hvigor 内置转换把明文 storePassword/keyPassword 转成 `0000001B...` 格式填入 signingConfigs（hvigorw 构建只认加密格式）。若无加密工具，可直接在 build-profile.json5 里填明文让 hvigorw 首次构建时自动加密回写（部分版本支持）。
    - **忘 keystore 密码**：密码不可逆，打不开旧 .p12。须重新生成一套（同上任意途径），旧的应用需卸载重装。
 4. **调试 profile 绑定的 bundleName**：从 `.p7b` 二进制里正则提取三段式 bundleName（如 `com.xxx.yyy`）。构建时把 NekoBox 的 `AppScope/app.json5` bundleName 改成它。
-5. **真机已连接**：`<hdc> list targets` 非空；手机已开开发者模式 + USB 调试。
+5. **真机已连接**：手机用数据线连电脑 → `设置→关于本机→连点版本号7次` 开开发者模式 → `设置→系统与更新→开发者选项→开 USB 调试` → 弹窗允许本电脑调试 → `<hdc> list targets` 应非空（hdc 在 `<command-line-tools>/sdk/default/openharmony/toolchains/hdc`）。
 6. **手机/SDK API 版本**：`<hdc> shell "param get const.ohos.apiversion"` 得手机 API；`sdk/default/sdk-pkg.json` 得 SDK API。两者须一致；项目 `build-profile.json5` 的 `compatibleSdkVersion`/`targetSdkVersion` 改成 SDK 支持的格式（API≥26 用 `"26.0.0"`，API 10–25 用 `"5.0.0(12)"` 样式）。
 
 ## 执行流程
