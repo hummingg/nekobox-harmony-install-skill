@@ -123,6 +123,7 @@ export PATH="<jdk17>/bin:$PATH"
 | 连接 120s 超时「扩展始终无状态回调」 | VpnIpc.ets APP_BUNDLE 硬编码原 bundleName | 步骤 2 改 APP_BUNDLE |
 | 连上后几分钟断开「扩展无响应」 | VpnExtAbility.ets wantAgent bundleName 硬编码 → 通知发不出 → 扩展被杀 | 步骤 2 改 wantAgent bundleName |
 | 状态栏无 VPN 图标 | 通知权限 allowEnableNotification=false | 设置→通知→NekoBox→允许通知；或卸载重装触发授权弹窗 |
+| 更新订阅后测速全失败 | 更新订阅只刷新节点列表，当前选中节点仍指向旧订阅的死节点 | 在 UI 里手动选一个新订阅的节点再连 |
 
 ## 限制（须如实告知用户）
 
